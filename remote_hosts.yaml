@@ -1,0 +1,17 @@
+# Example config
+# List all hosts:
+#
+# hosts:
+#  - {"ip": 192.168.0.1, "port": 567890}
+#  - {"ip": 192.168.0.2, "port": 567890}
+#  - {"ip": 192.168.0.3, "port": 567890}
+#
+#
+# List only hosts with wifi card installed:
+#
+# wifi:
+#  - {"ip": 192.168.0.1, "port": 567890}
+#  - {"ip": 192.168.0.3, "port": 567890}
+#
+# Etc.
+#
