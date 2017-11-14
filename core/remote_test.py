@@ -24,20 +24,11 @@ pytestmark = pytest.mark.skipif(skip_if_not_enough_remote_nodes("hosts", 2),
 @pytest.fixture(scope='module')
 def my_wishful_controller(request):
     # Create controller
-    controller = wishful_controller.Controller(dl="tcp://127.0.0.1:8990",
-                                               ul="tcp://127.0.0.1:8989")
+    controller = wishful_controller.Controller(dl="tcp://10.0.0.23:8990",
+                                               ul="tcp://10.0.0.23:8989")
     # Configure controller
     controller.set_controller_info(name="WishfulController",
                                    info="WishfulControllerInfo")
-    controller.add_module(moduleName="discovery",
-                          pyModuleName="wishful_module_discovery_pyre",
-                          className="PyreDiscoveryControllerModule",
-                          kwargs={"iface": "lo",
-                                  "groupName": "wishful_1234",
-                                  "downlink": "tcp://127.0.0.1:8990",
-                                  "uplink": "tcp://127.0.0.1:8989"
-                                  }
-                          )
 
     @controller.new_node_callback()
     def new_node(node):
@@ -79,7 +70,7 @@ def test_node_discovery_one_node(my_wishful_controller, remote_agent_manager):
     if "hosts" in remote_hosts_dict:
         h0ip = remote_hosts_dict["hosts"][0]["ip"]
     scriptPath = dir_path + "/wishful_simple_agent"
-    configPath = dir_path + "/agent_config.yaml"
+    configPath = dir_path + "/remote_agent_config.yaml"
     remoteAgentHost = remote_agent_manager.create_remote_agent_proxy(h0ip)
     remoteAgentHost.upload_agent_script(scriptPath)
     remoteAgentHost.upload_agent_config(configPath)
@@ -104,10 +95,10 @@ def test_node_discovery_two_nodes(my_wishful_controller, remote_agent_manager):
     if "hosts" in remote_hosts_dict:
         h1ip = remote_hosts_dict["hosts"][1]["ip"]
     scriptPath = dir_path + "/wishful_simple_agent"
-    configPath = dir_path + "/agent_config.yaml"
+    configPath = dir_path + "/remote_agent_config.yaml"
     remoteAgentHost = remote_agent_manager.start_remote_agent(scriptPath,
                                                               configPath,
-                                                              h1ip, 567895)
+                                                              h1ip)
     i = 0
     while i < 10:
         gevent.sleep(1)
@@ -279,7 +270,7 @@ def test_delayed_call(my_wishful_controller):
     endTime = time.time()
     delay = endTime-startTime
     assert response == ['SET_CHANNEL_OK', newChannel, 0]
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
 
     # get channel with delayed non-blocking call
     callbackExecuted = False
@@ -298,7 +289,7 @@ def test_delayed_call(my_wishful_controller):
     delay = endTime - startTime
     print("test_delayed_call -- schedule delay: {}, executed with delay: {}".format(scheduleWithDelay, delay))
     assert response == newChannel
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
 
 
 def test_scheduled_call(my_wishful_controller):
@@ -338,7 +329,7 @@ def test_scheduled_call(my_wishful_controller):
     endTime = time.time()
     delay = endTime-startTime
     assert response == ['SET_CHANNEL_OK', newChannel, 0]
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
 
     # get channel with delayed non-blocking call
     callbackExecuted = False
@@ -358,4 +349,4 @@ def test_scheduled_call(my_wishful_controller):
     delay = endTime - startTime
     print("test_scheduled_call -- schedule delay: {}, executed with delay: {}".format(scheduleWithDelay, delay))
     assert response == newChannel
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
