@@ -5,7 +5,7 @@ import gevent
 import pytest
 import wishful_controller
 import wishful_upis as upis
-from conftest import get_remote_hosts_dict, skip_if_not_enough_remote_nodes
+from conftest import get_remote_hosts_dict, skip_if_not_enough_remote_nodes, get_controller_config_dict, skip_if_no_controller_config
 
 __author__ = "Piotr Gawlowicz"
 __copyright__ = "Copyright (c) 2017, Technische Universität Berlin"
@@ -16,16 +16,22 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 nodes = []
 
 # skip all tests from this pytest module
-# if there is less than two remote nodes
-pytestmark = pytest.mark.skipif(skip_if_not_enough_remote_nodes("hosts", 2),
-                                reason="Need at least 2 remote nodes")
+# if there is no config for global controller
+# or if there is less than two remote nodes
+pytestmark = pytest.mark.skipif(skip_if_not_enough_remote_nodes("hosts", 2) or skip_if_no_controller_config(),
+                                reason="Controller Config is missing or to small number of remote nodes")
 
 
 @pytest.fixture(scope='module')
 def my_wishful_controller(request):
     # Create controller
-    controller = wishful_controller.Controller(dl="tcp://10.0.0.23:8990",
-                                               ul="tcp://10.0.0.23:8989")
+    controller_config = get_controller_config_dict()
+
+    downlink = controller_config["downlink"]
+    uplink = controller_config["uplink"]
+
+    controller = wishful_controller.Controller(dl=downlink,
+                                               ul=uplink)
     # Configure controller
     controller.set_controller_info(name="WishfulController",
                                    info="WishfulControllerInfo")

@@ -9,6 +9,28 @@ __version__ = "0.1.0"
 __email__ = "gawlowicz@tkn.tu-berlin.de"
 
 
+def get_controller_config_dict():
+    config = {}
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    f = open(dir_path + "/remote_hosts.yaml")
+    data = yaml.load(f)
+
+    if "controller_config" in data:
+        config = data["controller_config"]
+
+    return config
+
+
+def skip_if_no_controller_config():
+    config = get_controller_config_dict()
+    if bool(config):
+        return False
+    else:
+        print("Global Controller config is missing!")
+        return True
+
+
 def get_remote_hosts_dict():
     remote_hosts = {}
 
