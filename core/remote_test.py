@@ -3,6 +3,7 @@ import time
 import datetime
 import gevent
 import pytest
+import yaml
 import wishful_controller
 import wishful_upis as upis
 from conftest import get_remote_hosts_dict, skip_if_not_enough_remote_nodes, get_controller_config_dict, skip_if_no_controller_config
@@ -13,6 +14,7 @@ __version__ = "0.1.0"
 __email__ = "gawlowicz@tkn.tu-berlin.de"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+tempConfigPath = '/tmp/remote_agent_config.yaml'
 nodes = []
 
 # skip all tests from this pytest module
@@ -24,12 +26,24 @@ pytestmark = pytest.mark.skipif(skip_if_not_enough_remote_nodes("hosts", 2) or s
 
 @pytest.fixture(scope='module')
 def my_wishful_controller(request):
-    # Create controller
+    # Get controller config (IP address)
     controller_config = get_controller_config_dict()
 
     downlink = controller_config["downlink"]
     uplink = controller_config["uplink"]
 
+    # Edit agent's config, so it knows IP of controller
+    configPath = dir_path + "/remote_agent_config.yaml"
+    with open(configPath) as f:
+        agentConfig = yaml.load(f)
+
+    agentConfig["modules"]["discovery"]["kwargs"]["uplink"] = uplink
+    agentConfig["modules"]["discovery"]["kwargs"]["downlink"] = downlink
+
+    with open(tempConfigPath, "w") as f:
+        yaml.dump(agentConfig, f)
+
+    # Create controller
     controller = wishful_controller.Controller(dl=downlink,
                                                ul=uplink)
     # Configure controller
@@ -76,7 +90,7 @@ def test_node_discovery_one_node(my_wishful_controller, remote_agent_manager):
     if "hosts" in remote_hosts_dict:
         h0ip = remote_hosts_dict["hosts"][0]["ip"]
     scriptPath = dir_path + "/wishful_simple_agent"
-    configPath = dir_path + "/remote_agent_config.yaml"
+    configPath = tempConfigPath
     remoteAgentHost = remote_agent_manager.create_remote_agent_proxy(h0ip)
     remoteAgentHost.upload_agent_script(scriptPath)
     remoteAgentHost.upload_agent_config(configPath)
@@ -101,7 +115,7 @@ def test_node_discovery_two_nodes(my_wishful_controller, remote_agent_manager):
     if "hosts" in remote_hosts_dict:
         h1ip = remote_hosts_dict["hosts"][1]["ip"]
     scriptPath = dir_path + "/wishful_simple_agent"
-    configPath = dir_path + "/remote_agent_config.yaml"
+    configPath = tempConfigPath
     remoteAgentHost = remote_agent_manager.start_remote_agent(scriptPath,
                                                               configPath,
                                                               h1ip)
