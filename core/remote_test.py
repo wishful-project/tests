@@ -3,9 +3,10 @@ import time
 import datetime
 import gevent
 import pytest
+import yaml
 import wishful_controller
 import wishful_upis as upis
-from conftest import get_remote_hosts_dict, skip_if_not_enough_remote_nodes
+from conftest import get_remote_hosts_dict, skip_if_not_enough_remote_nodes, get_controller_config_dict, skip_if_no_controller_config
 
 __author__ = "Piotr Gawlowicz"
 __copyright__ = "Copyright (c) 2017, Technische Universität Berlin"
@@ -13,31 +14,41 @@ __version__ = "0.1.0"
 __email__ = "gawlowicz@tkn.tu-berlin.de"
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+tempConfigPath = '/tmp/remote_agent_config.yaml'
 nodes = []
 
 # skip all tests from this pytest module
-# if there is less than two remote nodes
-pytestmark = pytest.mark.skipif(skip_if_not_enough_remote_nodes("hosts", 2),
-                                reason="Need at least 2 remote nodes")
+# if there is no config for global controller
+# or if there is less than two remote nodes
+pytestmark = pytest.mark.skipif(skip_if_not_enough_remote_nodes("hosts", 2) or skip_if_no_controller_config(),
+                                reason="Controller Config is missing or to small number of remote nodes")
 
 
 @pytest.fixture(scope='module')
 def my_wishful_controller(request):
+    # Get controller config (IP address)
+    controller_config = get_controller_config_dict()
+
+    downlink = controller_config["downlink"]
+    uplink = controller_config["uplink"]
+
+    # Edit agent's config, so it knows IP of controller
+    configPath = dir_path + "/remote_agent_config.yaml"
+    with open(configPath) as f:
+        agentConfig = yaml.load(f)
+
+    agentConfig["modules"]["discovery"]["kwargs"]["uplink"] = uplink
+    agentConfig["modules"]["discovery"]["kwargs"]["downlink"] = downlink
+
+    with open(tempConfigPath, "w") as f:
+        yaml.dump(agentConfig, f)
+
     # Create controller
-    controller = wishful_controller.Controller(dl="tcp://127.0.0.1:8990",
-                                               ul="tcp://127.0.0.1:8989")
+    controller = wishful_controller.Controller(dl=downlink,
+                                               ul=uplink)
     # Configure controller
     controller.set_controller_info(name="WishfulController",
                                    info="WishfulControllerInfo")
-    controller.add_module(moduleName="discovery",
-                          pyModuleName="wishful_module_discovery_pyre",
-                          className="PyreDiscoveryControllerModule",
-                          kwargs={"iface": "lo",
-                                  "groupName": "wishful_1234",
-                                  "downlink": "tcp://127.0.0.1:8990",
-                                  "uplink": "tcp://127.0.0.1:8989"
-                                  }
-                          )
 
     @controller.new_node_callback()
     def new_node(node):
@@ -79,7 +90,7 @@ def test_node_discovery_one_node(my_wishful_controller, remote_agent_manager):
     if "hosts" in remote_hosts_dict:
         h0ip = remote_hosts_dict["hosts"][0]["ip"]
     scriptPath = dir_path + "/wishful_simple_agent"
-    configPath = dir_path + "/agent_config.yaml"
+    configPath = tempConfigPath
     remoteAgentHost = remote_agent_manager.create_remote_agent_proxy(h0ip)
     remoteAgentHost.upload_agent_script(scriptPath)
     remoteAgentHost.upload_agent_config(configPath)
@@ -104,10 +115,10 @@ def test_node_discovery_two_nodes(my_wishful_controller, remote_agent_manager):
     if "hosts" in remote_hosts_dict:
         h1ip = remote_hosts_dict["hosts"][1]["ip"]
     scriptPath = dir_path + "/wishful_simple_agent"
-    configPath = dir_path + "/agent_config.yaml"
+    configPath = tempConfigPath
     remoteAgentHost = remote_agent_manager.start_remote_agent(scriptPath,
                                                               configPath,
-                                                              h1ip, 567895)
+                                                              h1ip)
     i = 0
     while i < 10:
         gevent.sleep(1)
@@ -279,7 +290,7 @@ def test_delayed_call(my_wishful_controller):
     endTime = time.time()
     delay = endTime-startTime
     assert response == ['SET_CHANNEL_OK', newChannel, 0]
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
 
     # get channel with delayed non-blocking call
     callbackExecuted = False
@@ -298,7 +309,7 @@ def test_delayed_call(my_wishful_controller):
     delay = endTime - startTime
     print("test_delayed_call -- schedule delay: {}, executed with delay: {}".format(scheduleWithDelay, delay))
     assert response == newChannel
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
 
 
 def test_scheduled_call(my_wishful_controller):
@@ -338,7 +349,7 @@ def test_scheduled_call(my_wishful_controller):
     endTime = time.time()
     delay = endTime-startTime
     assert response == ['SET_CHANNEL_OK', newChannel, 0]
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2
 
     # get channel with delayed non-blocking call
     callbackExecuted = False
@@ -358,4 +369,4 @@ def test_scheduled_call(my_wishful_controller):
     delay = endTime - startTime
     print("test_scheduled_call -- schedule delay: {}, executed with delay: {}".format(scheduleWithDelay, delay))
     assert response == newChannel
-    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.1
+    assert delay >= scheduleWithDelay and delay <= scheduleWithDelay+0.2

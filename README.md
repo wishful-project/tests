@@ -20,18 +20,23 @@ Execute tests on multiple hosts
 
         sudo ./common/remote_agent_host [--port=PORT, default=567890]
 
-2. On group leader host edit remote_hosts.yaml file and specify all nodes in network.
+2. On group leader host edit remote_hosts.yaml file and specify all nodes in network and global controller config:
+
+        # global controller config
+        controller_config:
+            downlink: "tcp://192.168.0.1:8990"
+            uplink: "tcp://192.168.0.1:8989"
 
         # List all hosts:
         hosts:
-            - {"ip": 192.168.0.1, "port": 567890}
-            - {"ip": 192.168.0.2, "port": 567890}
-            - {"ip": 192.168.0.3, "port": 567890}
+            - {"ip": 192.168.0.101, "port": 567890}
+            - {"ip": 192.168.0.102, "port": 567890}
+            - {"ip": 192.168.0.103, "port": 567890}
 
         # List only hosts with wifi card installed:
         wifi:
-            - {"ip": 192.168.0.1, "port": 567890}
-            - {"ip": 192.168.0.3, "port": 567890}
+            - {"ip": 192.168.0.101, "port": 567890}
+            - {"ip": 192.168.0.103, "port": 567890}
 
         # etc...
 
