@@ -4,7 +4,7 @@ from common.local_agent_managers import *
 from common.remote_agent_managers import *
 
 __author__ = "Piotr Gawlowicz"
-__copyright__ = "Copyright (c) 2017, Technische Universität Berlin"
+__copyright__ = "Copyright (c) 2017, Technische Universitat Berlin"
 __version__ = "0.1.0"
 __email__ = "gawlowicz@tkn.tu-berlin.de"
 
