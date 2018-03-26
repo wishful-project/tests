@@ -1,4 +1,3 @@
-# This Python file uses the following encoding: utf-8
 import os
 import yaml
 from common.local_agent_managers import *
